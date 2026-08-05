@@ -1,0 +1,48 @@
+name: build-openwrt-n66u
+
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+
+jobs:
+  build:
+    runs-on: [self-hosted]
+    container:
+      image: debian:bookworm
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build deps
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends make gawk perl file xz-utils tar wget ca-certificates >/dev/null
+
+      - name: Download + extract ImageBuilder
+        run: |
+          wget -q https://downloads.openwrt.org/releases/22.03.7/targets/bcm47xx/generic/openwrt-imagebuilder-22.03.7-bcm47xx-generic.Linux-x86_64.tar.xz
+          tar xf openwrt-imagebuilder-22.03.7-bcm47xx-generic.Linux-x86_64.tar.xz
+          echo "IB=$PWD/openwrt-imagebuilder-22.03.7-bcm47xx-generic.Linux-x86_64" >> "$GITHUB_ENV"
+
+      - name: Install custom asus_rt-n66u profile
+        run: bash scripts/install-profile.sh "$IB"
+
+      - name: Build image
+        run: |
+          make -C "$IB" image PROFILE=asus_rt-n66u \
+            PACKAGES="kmod-b43 kmod-bgmac tcpdump mosquitto-client-ssl curl ca-certificates" \
+            FILES="$GITHUB_WORKSPACE/files" 2>&1 | tail -20
+
+      - name: Collect artifact
+        run: |
+          mkdir -p dist
+          cp "$IB/bin/targets/bcm47xx/generic/"*asus_rt-n66u* dist/
+          (cd dist && sha256sum openwrt-*.trx > SHA256SUMS)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt-n66u-22.03.7
+          path: dist/

@@ -1,0 +1,34 @@
+#!/bin/sh
+# RT-N66U wifi-positioning sniffer -- first-boot config (baked via FILES dir)
+# Runs once on first boot (uci-defaults), after board detection.
+. /lib/functions.sh
+
+# LAN: static, .254 to avoid OPNsense at 192.168.1.1
+uci set network.lan.proto='static'
+uci set network.lan.ipaddr='192.168.1.254'
+uci set network.lan.netmask='255.255.255.0'
+uci set network.lan.gateway='192.168.1.1'
+uci set network.lan.dns='192.168.1.1'
+uci commit network
+
+# hostname
+uci set system.@system[0].hostname='n66u-sniffer'
+uci commit system
+
+# wireless: wipe all AP ifaces, single monitor iface on radio0 (2.4 GHz)
+while uci delete wireless.@wifi-iface[0] 2>/dev/null; do :; done
+uci set wireless.radio0.disabled='0'
+uci set wireless.radio0.channel='6'
+uci set wireless.radio0.htmode='HT20'
+uci set wireless.radio0.country='US'
+uci set wireless.radio0.txpower='20'
+uci set wireless.mon0=wifi-iface
+uci set wireless.mon0.device='radio0'
+uci set wireless.mon0.mode='monitor'
+uci set wireless.mon0.network=''
+uci set wireless.mon0.disabled='0'
+# radio1 (5 GHz): leave as-is (if b43 initializes it, add monitor later;
+# design tolerates 2.4 GHz-only sniffing)
+uci commit wireless
+
+exit 0
