@@ -18,7 +18,7 @@ jobs:
       - name: Install build deps
         run: |
           apt-get update -qq
-          apt-get install -y -qq --no-install-recommends make gawk perl file xz-utils tar wget ca-certificates >/dev/null
+          apt-get install -y -qq --no-install-recommends make gawk perl file xz-utils tar wget ca-certificates rsync >/dev/null
 
       - name: Download + extract ImageBuilder
         run: |
