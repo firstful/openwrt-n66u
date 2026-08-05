@@ -15,8 +15,10 @@ IB="${1:?usage: install-profile.sh <imagebuilder-dir>}"
 cp "$(dirname "$0")/../image/generic.mk" "$IB/target/linux/bcm47xx/image/generic.mk"
 
 # 2. Register the profile in the shipped profile index (.profiles.mk).
-#    The ImageBuilder does not regenerate .targetinfo/.profiles.mk from the
-#    device Makefiles, so the new device must be added to the index by hand.
+#    The file is generated on the first make invocation from the static
+#    .targetinfo (which predates our patch), so it never contains the new
+#    device -- generate it, then register asus_rt-n66u by hand.
+make -C "$IB" .profiles.mk >/dev/null 2>&1 || true
 sed -i 's/DEVICE_linksys_e3000-v1 DEVICE_standard/DEVICE_linksys_e3000-v1 DEVICE_asus_rt-n66u DEVICE_standard/' "$IB/.profiles.mk"
 cat >> "$IB/.profiles.mk" <<'EOF'
 DEVICE_asus_rt-n66u_NAME:=ASUS RT-N66U
